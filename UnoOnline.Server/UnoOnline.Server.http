@@ -1,0 +1,6 @@
+@UnoOnline.Server_HostAddress = http://localhost:5233
+
+GET {{UnoOnline.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
