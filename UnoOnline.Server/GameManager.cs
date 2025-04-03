@@ -388,7 +388,7 @@ namespace UnoOnline.Server
                 _pendingDrawAmount += 4;
                 GameMessage += $" Next player must draw {_pendingDrawAmount} or play a Draw card.";
                 Console.WriteLine($"Game Manager: Wild Draw Four effect applied. Pending draw is now {_pendingDrawAmount}.");
-                AdvanceTurn(skipNextPlayer: true); // Skip the next player
+                AdvanceTurn();
                 turnAdvanced = true;
             }
 
