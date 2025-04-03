@@ -1,0 +1,313 @@
+﻿@page "/unogame"
+@using UnoOnline.Shared
+@using UnoOnline.Web.Services
+@inject GameManagerService GameManagerService
+@rendermode InteractiveServer // Ensures component handles UI events
+
+<PageTitle>Uno Online Game</PageTitle>
+
+<h3>Uno Game</h3>
+
+@* --- Player Management (Only before game starts) --- *@
+@if (CurrentGameState == null || !CurrentGameState.IsGameRunning)
+{
+    <div class="add-player-section">
+        <h4>Add Players (Min 2)</h4>
+        <input @bind="newPlayerName" placeholder="Enter Player Name" @onkeyup="HandleAddPlayerKey" disabled="@(CurrentGameState?.Players.Count >= 10)" />
+        <button @onclick="AddPlayerHandler" disabled="@(string.IsNullOrWhiteSpace(newPlayerName) || CurrentGameState?.Players.Count >= 10)">Add Player</button>
+        @if (CurrentGameState?.Players.Count >= 10) { <span style="color: red;">Max players reached.</span> }
+
+        @* Display added players *@
+        @if (CurrentGameState?.Players.Count > 0)
+        {
+            <p>Players Added (@CurrentGameState.Players.Count):</p>
+            <ul>
+                @foreach (var player in CurrentGameState.Players)
+                {
+                    <li>@player.Name (@player.Id)</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@* --- Game Status and Controls --- *@
+@if (CurrentGameState == null)
+{
+    <p><em>Loading game state...</em></p>
+}
+else
+{
+    <div class="game-controls">
+        <button @onclick="StartNewGameHandler" disabled="@(CurrentGameState.Players.Count < 2)">
+            @(CurrentGameState.IsGameRunning ? "Start New Game" : "Start Game")
+        </button>
+        @if (!CurrentGameState.IsGameRunning && CurrentGameState.Players.Count < 2)
+        {
+            <span style="color: orange; margin-left: 10px;">Need at least 2 players to start.</span>
+        }
+        <p><strong>Status:</strong> <span class="game-message">@CurrentGameState.GameMessage</span></p>
+    </div>
+
+    @* --- Main Game Board (Only when running) --- *@
+    @if (CurrentGameState.IsGameRunning)
+    {
+        <div class="game-board">
+            <div class="piles-area">
+                <!-- Discard Pile -->
+                <div class="discard-pile">
+                    <h4>
+                        Discard Pile Top:
+                        @if (CurrentGameState.ChosenWildColor.HasValue)
+                        {
+                            <span class="chosen-color-indicator @CurrentGameState.ChosenWildColor.Value.ToString().ToLowerInvariant()">
+                                (Color: @CurrentGameState.ChosenWildColor.Value)
+                            </span>
+                        }
+                    </h4>
+                    @if (CurrentGameState.CurrentCard != null)
+                    {
+                        <div class="card @GetCardCssClass(CurrentGameState.CurrentCard)">
+                            @GetCardDisplay(CurrentGameState.CurrentCard)
+                        </div>
+                    }
+                    else { <p>(Empty)</p> }
+                </div>
+
+                <!-- Draw Pile -->
+                <div class="draw-pile">
+                    <h4>Draw Pile (@CurrentGameState.DrawPileCount cards)</h4>
+                    @if (CurrentGameState.PendingDrawAmount > 0)
+                    {
+                        <p class="pending-draw"><strong>Must Draw @CurrentGameState.PendingDrawAmount!</strong></p>
+                    }
+                    <button class="card card-back"
+                            title="@(CurrentGameState.PendingDrawAmount > 0 ? $"Draw {CurrentGameState.PendingDrawAmount} cards" : "Draw a card")"
+                            @onclick="DrawCardHandler"
+                            disabled="@(CurrentGameState.IsAwaitingColorChoice)">
+                        @(CurrentGameState.PendingDrawAmount > 0 ? $"DRAW {CurrentGameState.PendingDrawAmount}" : "DRAW")
+                    </button>
+                </div>
+            </div>
+
+            <!-- Color Choice Section -->
+            @if (CurrentGameState.IsAwaitingColorChoice)
+            {
+                <div class="color-choice">
+                    <h4>Choose a color:</h4>
+                    @foreach (var color in Enum.GetValues<CardColor>().Where(c => c != CardColor.Wild))
+                    {
+                        <button class="card color-picker @color.ToString().ToLowerInvariant()"
+                                @onclick="() => SelectColorHandler(color)">
+                            @color.ToString()
+                        </button>
+                    }
+                </div>
+            }
+
+            <hr />
+
+            <!-- Player Hands Area -->
+            <h4>Players:</h4>
+            <div class="players-area">
+                @foreach (var player in CurrentGameState.Players)
+                {
+                    <div class="player-info @(player.Id == CurrentGameState.CurrentPlayerId ? "current-turn" : "")">
+                        <h5>
+                            @player.Name (@player.CardCount cards)
+                            @if (player.Id == CurrentGameState.CurrentPlayerId)
+                            {
+                                <span class="turn-indicator"> YOUR TURN</span> @* Jelzi, ki van soron *@
+                            }
+                        </h5>
+
+                        <div class="hand">
+                            @* Show detailed hand ONLY for the CURRENT player *@
+                            @if (player.Id == CurrentGameState.CurrentPlayerId) @* <<< EZ A FŐ VÁLTOZÁS ITT *@
+                            {
+                                @if (player.Hand.Count == 0 && CurrentGameState.IsGameRunning)
+                                {
+                                    <p><em>Player has no cards! Waiting for game end...</em></p>
+                                }
+                                else
+                                {
+                                    @foreach (var card in player.Hand.OrderBy(c => c.Color).ThenBy(c => GetCardSortValue(c)))
+                                    {
+                                        <button class="card @GetCardCssClass(card)"
+                                                title="Play @GetCardDisplay(card)"
+                                                @onclick="() => PlayCardHandler(card.Id)"
+                                                disabled="@(CurrentGameState.IsAwaitingColorChoice)">
+                                            @* <<< Csak színválasztás tiltja *@
+                                            @GetCardDisplay(card)
+                                        </button>
+                                    }
+                                }
+                            }
+                            else // Show card backs for other players
+                            {
+                                @for (int i = 0; i < player.CardCount; i++)
+                                {
+                                    <div class="card card-back small" title="Opponent Card"></div>
+                                }
+                                @if (player.CardCount == 0 && CurrentGameState.IsGameRunning)
+                                {
+                                    <p><em>Player has no cards!</em></p>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private GameState? CurrentGameState;
+    // A UserPlayerId és UserPlayerName már nem szükséges a játéklogikához ebben a módban,
+    // de az Add Player demohoz megtarthatók, ha akarod. Itt most kiveszem őket a félreértések elkerülése végett.
+
+    // --- State for Add Player Demo ---
+    private string newPlayerName = "";
+    private int playerCounter = 1; // Simple ID generator for demo
+
+    protected override void OnInitialized()
+    {
+        RefreshGameState();
+    }
+
+    private void RefreshGameState()
+    {
+        CurrentGameState = GameManagerService.GetGameState();
+        StateHasChanged(); // Fontos lehet a UI frissítéséhez itt is
+    }
+
+    // --- Button Handlers ---
+    private void HandleAddPlayerKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(newPlayerName))
+        {
+            AddPlayerHandler();
+        }
+    }
+
+    private void AddPlayerHandler()
+    {
+        if (!string.IsNullOrWhiteSpace(newPlayerName) && (CurrentGameState == null || !CurrentGameState.IsGameRunning))
+        {
+            string id = $"player{playerCounter++}";
+            bool added = GameManagerService.AddPlayer(id, newPlayerName);
+            if (!added) { Console.WriteLine($"UI: Failed to add player {newPlayerName}"); }
+            else { Console.WriteLine($"UI: Added player {newPlayerName} ({id})"); }
+            newPlayerName = ""; // Clear input
+            RefreshGameState(); // Frissítjük az állapotot, hogy látszódjon az új játékos
+        }
+    }
+
+    private void StartNewGameHandler()
+    {
+        if (CurrentGameState != null && CurrentGameState.Players.Count < 2)
+        {
+            Console.WriteLine("UI: Cannot start, need more players.");
+            return;
+        }
+        Console.WriteLine("UI: Attempting to start/restart game...");
+        bool started = GameManagerService.StartGame();
+        if (!started && CurrentGameState != null)
+        {
+            Console.WriteLine($"UI: Failed to start/restart game. Reason: {CurrentGameState.GameMessage}");
+        }
+        else if (started)
+        {
+            Console.WriteLine("UI: Game (re)started successfully.");
+        }
+        RefreshGameState(); // Mindig frissítjük a játék állapotát
+    }
+
+    // TELJES FÜGGVÉNY - Aktuális játékos ID-t használja
+    private void DrawCardHandler()
+    {
+        string? currentPlayerId = CurrentGameState?.CurrentPlayerId;
+        if (currentPlayerId == null || CurrentGameState == null || CurrentGameState.IsAwaitingColorChoice) return; // Ha nincs kire lépni, vagy színt várunk, ne csináljon semmit
+
+        Console.WriteLine($"UI: Acting as Player {currentPlayerId} - attempting to draw card...");
+        bool drawn = GameManagerService.AttemptDrawCard(currentPlayerId);
+        if (!drawn)
+        {
+            Console.WriteLine($"UI: Player {currentPlayerId} failed draw attempt. Reason: {CurrentGameState.GameMessage}");
+        }
+        RefreshGameState(); // Mindig frissítjük a játék állapotát
+    }
+
+    // TELJES FÜGGVÉNY - Aktuális játékos ID-t használja
+    private void PlayCardHandler(Guid cardId)
+    {
+        string? currentPlayerId = CurrentGameState?.CurrentPlayerId;
+        if (currentPlayerId == null || CurrentGameState == null || CurrentGameState.IsAwaitingColorChoice) return; // Ha nincs kire lépni, vagy színt várunk, ne csináljon semmit
+
+        Console.WriteLine($"UI: Acting as Player {currentPlayerId} - attempting to play card {cardId}...");
+        bool played = GameManagerService.AttemptPlayCard(currentPlayerId, cardId);
+        if (!played)
+        {
+            Console.WriteLine($"UI: Player {currentPlayerId} failed play attempt. Reason: {CurrentGameState.GameMessage}");
+        }
+        RefreshGameState(); // Mindig frissítjük a játék állapotát
+    }
+
+    // TELJES FÜGGVÉNY - Aktuális játékos ID-t használja
+    private void SelectColorHandler(CardColor color)
+    {
+        string? currentPlayerId = CurrentGameState?.CurrentPlayerId;
+        // Itt ellenőrizzük, hogy valóban színválasztásra várunk-e
+        if (currentPlayerId == null || CurrentGameState == null || !CurrentGameState.IsAwaitingColorChoice) return;
+
+        Console.WriteLine($"UI: Acting as Player {currentPlayerId} - attempting to set color to {color}...");
+        bool success = GameManagerService.AttemptSetWildColor(currentPlayerId, color);
+        if (!success)
+        {
+            Console.WriteLine($"UI: Player {currentPlayerId} failed color set attempt. Reason: {CurrentGameState.GameMessage}");
+        }
+        RefreshGameState(); // Mindig frissítjük a játék állapotát
+    }
+
+    // --- UI Logic Helpers ---
+
+    /// <summary>
+    /// Helper to get CSS class based on card color.
+    /// </summary>
+    private string GetCardCssClass(Card? card)
+    {
+        return card?.Color.ToString().ToLowerInvariant() ?? "unknown";
+    }
+
+    /// <summary>
+    /// Helper to get the display text for a card (e.g., "Red 5", "Wild", "+2").
+    /// </summary>
+    private string GetCardDisplay(Card? card)
+    {
+        if (card == null) return "?";
+        switch (card.Value)
+        {
+            case CardValue.Skip: return "Skip"; // Or use symbol 🚫
+            case CardValue.Reverse: return "Rev"; // Or use symbol 🔄
+            case CardValue.DrawTwo: return "+2";
+            case CardValue.Wild: return "Wild";
+            case CardValue.WildDrawFour: return "+4 Wild";
+            // Default case handles numbers 0-9
+            default: return ((int)card.Value).ToString();
+        }
+    }
+
+     /// <summary>
+    /// Helper for sorting cards correctly (Numbers, then Actions, then Wilds).
+    /// </summary>
+    private int GetCardSortValue(Card card) {
+        if(card.Value <= CardValue.Nine) return (int)card.Value; // 0-9
+        if(card.Value == CardValue.Skip) return 10;
+        if(card.Value == CardValue.Reverse) return 11;
+        if(card.Value == CardValue.DrawTwo) return 12;
+        if(card.Value == CardValue.Wild) return 13;
+        if(card.Value == CardValue.WildDrawFour) return 14;
+        return 99; // Should not happen
+    }
+}

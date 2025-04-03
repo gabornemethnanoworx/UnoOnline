@@ -14,29 +14,32 @@ namespace UnoOnline.Server
 
         public Deck()
         {
+            // Use a shared Random instance if created frequently, but for a single deck, this is fine.
             _random = new Random();
-            InitializeDeck();
+            InitializeDeck(); // Initialize on creation
         }
 
-        // Initializes the deck with all 108 Uno cards.
-        private void InitializeDeck()
+        /// <summary>
+        /// Initializes or resets the deck to a full, standard 108-card Uno deck.
+        /// </summary>
+        public void InitializeDeck()
         {
-            _cards = new List<Card>();
+            _cards = new List<Card>(108); // Pre-allocate capacity for efficiency
             var colors = new[] { CardColor.Red, CardColor.Yellow, CardColor.Green, CardColor.Blue };
 
             foreach (var color in colors)
             {
-                // Every color: 1x 0 (zero) card
+                // 1x Zero card per color
                 _cards.Add(new Card(color, CardValue.Zero));
 
-                // Every color: 2x 1-9 card
+                // 2x 1-9 cards per color
                 for (int i = 1; i <= 9; i++)
                 {
                     _cards.Add(new Card(color, (CardValue)i));
                     _cards.Add(new Card(color, (CardValue)i));
                 }
 
-                // Every color: 2x Skip, Reverse, DrawTwo card
+                // 2x Skip, Reverse, DrawTwo cards per color
                 _cards.Add(new Card(color, CardValue.Skip));
                 _cards.Add(new Card(color, CardValue.Skip));
                 _cards.Add(new Card(color, CardValue.Reverse));
@@ -45,30 +48,48 @@ namespace UnoOnline.Server
                 _cards.Add(new Card(color, CardValue.DrawTwo));
             }
 
-            // 4 Wild
+            // 4x Wild cards
             for (int i = 0; i < 4; i++)
             {
                 _cards.Add(new Card(CardColor.Wild, CardValue.Wild));
             }
 
-            // 4 Wild Draw Four
+            // 4x Wild Draw Four cards
             for (int i = 0; i < 4; i++)
             {
                 _cards.Add(new Card(CardColor.Wild, CardValue.WildDrawFour));
             }
-            // Sum: 4 * (1 + 2*9 + 2*3) + 4 + 4 = 4 * (1 + 18 + 6) + 8 = 4 * 25 + 8 = 100 + 8 = 108 card
+            // Total: 4 * (1 + 2*9 + 2*3) + 4 + 4 = 108 cards
+            Console.WriteLine("--- Deck Initialized with 108 cards ---");
         }
 
+        /// <summary>
+        /// Shuffles the deck using the Fisher-Yates (inside-out) algorithm.
+        /// </summary>
         public void Shuffle()
         {
-            _cards = _cards.OrderBy(c => _random.Next()).ToList();
-            Console.WriteLine("--- Deck Shuffled ---");
+            int n = _cards.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = _random.Next(n + 1);
+                // Swap cards[k] and cards[n]
+                Card value = _cards[k];
+                _cards[k] = _cards[n];
+                _cards[n] = value;
+            }
+            Console.WriteLine($"--- Deck Shuffled ({_cards.Count} cards) ---");
         }
 
+        /// <summary>
+        /// Draws a single card from the top of the deck.
+        /// </summary>
+        /// <returns>The drawn card, or null if the deck is empty.</returns>
         public Card? DrawCard()
         {
             if (CardsRemaining > 0)
             {
+                // Draw from the "end" of the list (like taking the top card)
                 Card drawnCard = _cards[CardsRemaining - 1];
                 _cards.RemoveAt(CardsRemaining - 1);
                 return drawnCard;
@@ -80,24 +101,54 @@ namespace UnoOnline.Server
             }
         }
 
+        /// <summary>
+        /// Prints the current state of the deck to the console (for debugging).
+        /// </summary>
         public void PrintDeckToConsole()
         {
             Console.WriteLine($"--- Current Deck ({CardsRemaining} cards) ---");
-            foreach (var card in _cards)
-            {
-                Console.WriteLine(card.ToString());
-            }
+            // Print in reverse to see "top" card first if desired
+            // for (int i = _cards.Count - 1; i >= 0; i--) { Console.WriteLine(_cards[i].ToString()); }
+            foreach (var card in _cards) { Console.WriteLine(card.ToString()); }
             Console.WriteLine("------------------------------------");
         }
 
-        /// Adds a card back into the deck and reshuffles.
-        /// Used for specific rules like putting a Wild Draw Four back during setup.
+        /// <summary>
+        /// Adds a single card back into the deck. Does NOT shuffle.
+        /// </summary>
+        public void AddCardBack(Card card)
+        {
+            if (card != null)
+            {
+                _cards.Add(card);
+                // No shuffle here, intended for bulk adds before a single shuffle
+            }
+        }
+
+        /// <summary>
+        /// Adds a collection of cards back into the deck. Does NOT shuffle automatically.
+        /// Primarily used for reshuffling the discard pile.
+        /// </summary>
+        public void AddCardsBack(IEnumerable<Card> cardsToAdd)
+        {
+            if (cardsToAdd != null)
+            {
+                _cards.AddRange(cardsToAdd);
+                Console.WriteLine($"Deck: Added {cardsToAdd.Count()} cards back. Total now: {_cards.Count}");
+            }
+        }
+
+        /// <summary>
+        /// Adds a single card back into the deck AND immediately reshuffles.
+        /// Useful for specific rules like putting back a Wild Draw Four during setup.
+        /// Less efficient than AddCardsBack + Shuffle for multiple cards.
+        /// </summary>
         public void AddCardBackAndShuffle(Card card)
         {
             if (card != null)
             {
                 _cards.Add(card);
-                Shuffle(); 
+                Shuffle(); // Reshuffle immediately
                 Console.WriteLine($"Deck: Added {card} back and reshuffled.");
             }
         }

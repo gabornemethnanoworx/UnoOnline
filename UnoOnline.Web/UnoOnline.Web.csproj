@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\UnoOnline.Server\UnoOnline.Server.csproj" />
     <ProjectReference Include="..\UnoOnline.Shared\UnoOnline.Shared.csproj" />
   </ItemGroup>
 

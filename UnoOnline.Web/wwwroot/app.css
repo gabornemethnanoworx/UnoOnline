@@ -58,3 +58,228 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+
+
+/* Add to your existing app.css or a new site.css */
+
+.game-board {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    background-color: #f9f9f9;
+}
+
+.discard-pile, .draw-pile {
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 30px;
+    min-height: 120px; /* Ensure space even if empty */
+}
+
+.card {
+    border: 1px solid black;
+    padding: 10px 15px;
+    min-width: 80px;
+    min-height: 100px;
+    display: inline-block;
+    margin: 5px;
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer; /* Make clickable items look clickable */
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    border-radius: 5px;
+    background-color: white; /* Default background */
+}
+
+    .card:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+
+    .card.red {
+        background-color: #FF5555;
+        color: white;
+    }
+
+    .card.yellow {
+        background-color: #FFAA00;
+        color: black;
+    }
+
+    .card.green {
+        background-color: #55AA55;
+        color: white;
+    }
+
+    .card.blue {
+        background-color: #5555FF;
+        color: white;
+    }
+
+    .card.wild {
+        background: linear-gradient(to bottom right, red, yellow, lime, blue); /* Basic wild look */
+        color: black;
+        border: 2px solid black;
+    }
+
+.card-back {
+    background-color: #333;
+    color: white;
+    font-size: 1.2em;
+    /* Add UNO logo or pattern later */
+    text-align: center;
+    line-height: 100px; /* Center text vertically */
+}
+
+    .card-back.small {
+        min-width: 40px;
+        min-height: 60px;
+        font-size: 0.8em;
+        line-height: normal;
+        padding: 5px;
+    }
+
+
+.players-area {
+    margin-top: 20px;
+}
+
+.player-hand {
+    border: 1px dashed #eee;
+    margin-bottom: 15px;
+    padding: 10px;
+}
+
+    .player-hand.current-turn {
+        border-color: #007bff; /* Highlight current player */
+        background-color: #e7f3ff;
+    }
+
+.hand {
+    display: flex; /* Arrange cards horizontally */
+    flex-wrap: wrap; /* Allow cards to wrap to next line */
+}
+
+h3, h4, h5 {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+hr {
+    margin: 20px 0;
+}
+
+/* ... (Meglév? CSS szabályok) ... */
+
+.game-controls {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.add-player-section {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+    .add-player-section input {
+        margin-right: 5px;
+    }
+
+
+.pending-draw {
+    color: #dc3545; /* Bootstrap danger color */
+    font-weight: bold;
+    margin: 5px 0;
+    padding: 5px;
+    background-color: #f8d7da; /* Lighter red */
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.chosen-color-indicator {
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    margin-left: 10px;
+    font-size: 0.9em;
+}
+
+    .chosen-color-indicator.red {
+        background-color: #FF5555;
+    }
+
+    .chosen-color-indicator.yellow {
+        background-color: #FFAA00;
+        color: black;
+    }
+
+    .chosen-color-indicator.green {
+        background-color: #55AA55;
+    }
+
+    .chosen-color-indicator.blue {
+        background-color: #5555FF;
+    }
+
+
+.color-choice {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px dashed #007bff;
+    background-color: #e7f3ff;
+}
+
+    .color-choice h4 {
+        margin-bottom: 10px;
+    }
+
+.color-picker {
+    min-width: 60px;
+    min-height: 40px;
+    font-size: 0.9em;
+    line-height: normal;
+    margin: 2px;
+}
+
+.player-info { /* Renamed from player-hand for clarity */
+    border: 1px dashed #eee;
+    margin-bottom: 15px;
+    padding: 10px;
+    min-height: 100px; /* Ensure space even for 0 cards */
+}
+
+    .player-info.current-turn {
+        border-color: #007bff; /* Highlight current player */
+        background-color: #e7f3ff;
+    }
+
+        .player-info.current-turn h5 {
+            font-weight: bold;
+        }
+
+.turn-indicator {
+    font-weight: bold;
+    color: #28a745; /* Green */
+}
+
+.card-back.small {
+    min-width: 40px;
+    min-height: 60px;
+    font-size: 0.8em;
+    line-height: normal;
+    padding: 5px;
+    background-color: #6c757d; /* Grey back */
+    border: 1px solid #343a40;
+    display: inline-block; /* Make them behave like cards */
+    margin: 2px;
+    border-radius: 3px;
+    color: transparent; /* Hide any default text */
+}

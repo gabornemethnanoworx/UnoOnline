@@ -1,10 +1,13 @@
 using UnoOnline.Web.Components;
+using UnoOnline.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddSingleton<GameManagerService>();
 
 var app = builder.Build();
 
@@ -24,5 +27,6 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
 
 app.Run();
