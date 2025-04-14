@@ -7,22 +7,20 @@ namespace UnoOnline.Server
 {
     public class GameManager
     {
-        // ... (Meglévő konstansok és privát mezők) ...
         private const int InitialHandSize = 7;
         private readonly List<Player> _players;
-        private Deck _deck; // Removed readonly to allow re-initialization
+        private Deck _deck;
         private readonly List<Card> _discardPile;
         private int _currentPlayerIndex;
         private bool _isGameRunning;
         private bool _clockwiseTurnOrder;
         private bool _mustDrawInsteadOfPlaying; // Flag indicating player drew unplayable card LAST turn
 
-        // --- ÚJ ÁLLAPOTOK ---
         private CardColor? _chosenWildColor = null; // Stores the chosen color after a Wild is played
         private bool _awaitingColorChoice = false; // Is the game waiting for the current player to choose a color?
         private int _pendingDrawAmount = 0; // How many cards must the next player draw (stacking)
 
-        // --- PUBLIKUS PROPERTY-K (meglévők + újak) ---
+        // --- PUBLIC ---
         public Card? CurrentCard => _discardPile.LastOrDefault();
         public Player? CurrentPlayer => _isGameRunning && _players.Count > 0 ? _players[_currentPlayerIndex] : null;
         public bool IsGameRunning => _isGameRunning;
@@ -30,7 +28,6 @@ namespace UnoOnline.Server
         public IReadOnlyList<Player> Players => _players.AsReadOnly();
         public int DrawPileCount => _deck.CardsRemaining;
 
-        // --- ÚJ PUBLIKUS PROPERTY-K ---
         public CardColor? ChosenWildColor => _chosenWildColor; // Expose chosen color
         public bool IsAwaitingColorChoice => _awaitingColorChoice; // Expose waiting state
         public int PendingDrawAmount => _pendingDrawAmount; // Expose pending draw count
@@ -87,18 +84,8 @@ namespace UnoOnline.Server
             return true;
         }
 
-        /// <summary>
-        /// Starts a new game or restarts the current one.
-        /// Clears hands, resets state, shuffles, deals, and starts the first turn.
-        /// </summary>
-        /// <summary>
-        /// Starts a new game or restarts the current one.
-        /// Clears hands, resets state, shuffles, deals, and starts the first turn,
-        /// applying effects of the first card correctly.
-        /// </summary>
         public bool StartGame()
         {
-            // Validation (minimum players)
             if (_players.Count < 2)
             {
                 Console.WriteLine($"Game Manager: Cannot start game. Need at least 2 players, currently have {_players.Count}.");
@@ -171,7 +158,7 @@ namespace UnoOnline.Server
             Card topCard = CurrentCard!;
             // Temporarily set player 0 as current for messages, even if skipped
             Player startingPlayer = CurrentPlayer!;
-            GameMessage = $"Game started! First card: {topCard}. "; // Initial part of message
+            GameMessage = $"Game started! First card: {topCard}. ";
 
             switch (topCard.Value)
             {
@@ -191,8 +178,8 @@ namespace UnoOnline.Server
 
                 case CardValue.Skip:
                     // Player 0 is skipped. The turn advances by ONE position.
-                    Console.WriteLine($"Game Manager: First card Skip! {startingPlayer.Name} is skipped.");
-                    AdvanceTurn(); // <<< JAVÍTÁS: skipNextPlayer: false (default)
+                    Console.WriteLine($"Game Manager: First card {topCard}! {startingPlayer.Name} is skipped.");
+                    AdvanceTurn();
                     GameMessage += $"{startingPlayer.Name} is skipped. Turn: {CurrentPlayer!.Name}.";
                     Console.WriteLine($"Game Manager: Turn advanced. Current player is now {CurrentPlayer.Name}");
                     break;
@@ -202,10 +189,9 @@ namespace UnoOnline.Server
                     {
                         // Change direction, then advance ONE step in the new direction.
                         _clockwiseTurnOrder = !_clockwiseTurnOrder;
-                        Console.WriteLine($"Game Manager: First card Reverse! Direction reversed (now {(_clockwiseTurnOrder ? "Clockwise" : "Counter-Clockwise")}).");
-                        AdvanceTurn(); // Advance 1 step in the new direction
+                        Console.WriteLine($"Game Manager: First card {topCard}! Direction reversed (now {(_clockwiseTurnOrder ? "Clockwise" : "Counter-Clockwise")}).");
                         GameMessage += $"Direction reversed. Turn: {CurrentPlayer!.Name}.";
-                        Console.WriteLine($"Game Manager: Turn advanced. Current player is now {CurrentPlayer.Name}");
+                        Console.WriteLine($"Game Manager: Direction reversed. Current player is now {CurrentPlayer.Name}");
                     }
                     else
                     { // Acts as Skip in 2P
@@ -215,8 +201,7 @@ namespace UnoOnline.Server
                         // Find opponent name for message clarity
                         Player opponent = _players.FirstOrDefault(p => p.Id != startingPlayer.Id)!;
                         GameMessage += $"{opponent.Name} is skipped. Turn: {startingPlayer.Name}.";
-                        Console.WriteLine($"Game Manager: Opponent skipped. Current player is still {CurrentPlayer!.Name}");
-                        // <<< JAVÍTÁS: Nincs AdvanceTurn() hívás itt >>>
+                        Console.WriteLine($"Game Manager: {opponent.Name} skipped. Turn: {CurrentPlayer!.Name}");
                     }
                     break;
 
@@ -226,10 +211,6 @@ namespace UnoOnline.Server
                     Console.WriteLine($"Game Manager: Game started normally. Turn: {CurrentPlayer!.Name}. Top card: {CurrentCard}");
                     break;
             }
-
-            // Ensure the final GameMessage reflects the actual starting player after effects
-            // This might override parts of the messages set within the switch, refine if needed.
-            // GameMessage = $"Game started. Turn: {CurrentPlayer!.Name}. Top Card: {CurrentCard}. {GameMessage}"; // Example refinement
 
             return true;
         }
@@ -422,7 +403,6 @@ namespace UnoOnline.Server
                 if (cardToPlay.Value == CardValue.WildDrawFour)
                 {
                     // WD4 can be played on D2 or WD4 (common rule)
-                    // TODO: Add official WD4 challenge rule later? For now, always allow if stacking.
                     return topCard.Value == CardValue.DrawTwo || topCard.Value == CardValue.WildDrawFour;
                 }
                 // Cannot play any other card if draw amount is pending
@@ -643,6 +623,5 @@ namespace UnoOnline.Server
         }
 
         // TODO: Add method PassTurn(string playerId) - Needed if player draws playable card but chooses not to play
-        // TODO: Add WD4 Challenge logic?
     }
 }

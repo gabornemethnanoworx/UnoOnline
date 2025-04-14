@@ -5,12 +5,10 @@ namespace UnoOnline.Server
 {
     public class Player
     {
-        /// A unique identifier for the player.
-        /// Later, this might be linked to their connection ID or user ID.
         public string Id { get; private set; }
 
         /// The player's display name.
-        public string Name { get; private set; } // Or make it settable if needed
+        public string Name { get; private set; }
 
         /// The list of cards currently in the player's hand.
         public List<Card> Hand { get; private set; }
@@ -36,7 +34,6 @@ namespace UnoOnline.Server
             return Hand.Remove(cardToRemove);
         }
 
-        /// Finds a card in the player's hand by its unique ID.
         public Card? FindCardById(Guid cardId)
         {
             return Hand.FirstOrDefault(card => card.Id == cardId);

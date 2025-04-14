@@ -60,7 +60,7 @@ namespace UnoOnline.Server
                 _cards.Add(new Card(CardColor.Wild, CardValue.WildDrawFour));
             }
             // Total: 4 * (1 + 2*9 + 2*3) + 4 + 4 = 108 cards
-            Console.WriteLine("--- Deck Initialized with 108 cards ---");
+            Console.WriteLine($"--- Deck Initialized ({_cards.Count} cards) ---");
         }
 
         /// <summary>
